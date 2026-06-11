@@ -1,7 +1,5 @@
-package com.clinic.dto.response;
+package com.clinic.mapper.dto.response;
 
-import com.clinic.entity.LabOrderStatus;
-import com.clinic.entity.LabUrgency;
 import java.time.LocalDateTime;
 import java.util.List;
 

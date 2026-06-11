@@ -1,4 +1,4 @@
-package com.clinic.dto.request;
+package com.clinic.mapper.dto.request;
 
 import com.clinic.entity.Gender;
 import jakarta.validation.constraints.Email;

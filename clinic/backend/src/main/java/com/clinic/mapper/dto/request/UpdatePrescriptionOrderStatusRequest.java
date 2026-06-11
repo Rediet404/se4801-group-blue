@@ -1,4 +1,4 @@
-package com.clinic.dto.request;
+package com.clinic.mapper.dto.request;
 
 import com.clinic.entity.PrescriptionOrderStatus;
 import jakarta.validation.constraints.NotNull;
