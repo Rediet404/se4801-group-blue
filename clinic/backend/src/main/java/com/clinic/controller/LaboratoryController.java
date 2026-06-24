@@ -1,11 +1,10 @@
 package com.clinic.controller;
 
 import com.clinic.config.ApiPaths;
-import com.clinic.dto.request.DoctorCreateRequest;
-import com.clinic.dto.request.DoctorUpdateRequest;
-import com.clinic.dto.response.DoctorResponse;
+import com.clinic.dto.request.LaboratoryCreateRequest;
+import com.clinic.dto.response.LaboratoryResponse;
 import com.clinic.dto.response.PageResponse;
-import com.clinic.service.DoctorService;
+import com.clinic.service.LaboratoryService;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -26,60 +25,57 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(ApiPaths.DOCTORS)
-public class DoctorController {
+@RequestMapping("/api/v1/laboratories")
+public class LaboratoryController {
 
-    private final DoctorService doctorService;
+    private final LaboratoryService laboratoryService;
 
-    public DoctorController(DoctorService doctorService) {
-        this.doctorService = doctorService;
+    public LaboratoryController(LaboratoryService laboratoryService) {
+        this.laboratoryService = laboratoryService;
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<DoctorResponse> create(@Valid @RequestBody DoctorCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(doctorService.create(request));
+    public ResponseEntity<LaboratoryResponse> create(@Valid @RequestBody LaboratoryCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(laboratoryService.create(request));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT')")
-    public ResponseEntity<DoctorResponse> getById(@PathVariable String id) {
-        return ResponseEntity.ok(doctorService.getById(id));
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT','PHARMACIST')")
+    public ResponseEntity<LaboratoryResponse> getById(@PathVariable String id) {
+        return ResponseEntity.ok(laboratoryService.getById(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT')")
-    public ResponseEntity<PageResponse<DoctorResponse>> getAll(
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT','PHARMACIST')")
+    public ResponseEntity<PageResponse<LaboratoryResponse>> getAll(
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable
     ) {
-        Page<DoctorResponse> page = doctorService.getAll(pageable);
+        Page<LaboratoryResponse> page = laboratoryService.getAll(pageable);
         return ResponseEntity.ok(PageResponse.of(page));
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT')")
-    public ResponseEntity<PageResponse<DoctorResponse>> search(
-            @RequestParam(required = false) String fullName,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String specialization,
-            @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) Boolean available,
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT','PHARMACIST')")
+    public ResponseEntity<PageResponse<LaboratoryResponse>> search(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String status,
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable
     ) {
-        Page<DoctorResponse> page = doctorService.search(fullName, email, specialization, active, available, pageable);
+        Page<LaboratoryResponse> page = laboratoryService.search(name, status, pageable);
         return ResponseEntity.ok(PageResponse.of(page));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<DoctorResponse> update(@PathVariable String id, @Valid @RequestBody DoctorUpdateRequest request) {
-        return ResponseEntity.ok(doctorService.update(id, request));
+    public ResponseEntity<LaboratoryResponse> update(@PathVariable String id, @Valid @RequestBody LaboratoryCreateRequest request) {
+        return ResponseEntity.ok(laboratoryService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable String id) {
-        doctorService.delete(id);
+        laboratoryService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
