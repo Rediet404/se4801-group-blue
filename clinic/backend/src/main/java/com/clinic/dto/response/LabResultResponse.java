@@ -1,4 +1,4 @@
-package com.clinic.mapper.dto.response;
+package com.clinic.dto.response;
 
 import com.clinic.entity.LabResultStatus;
 import java.time.LocalDateTime;

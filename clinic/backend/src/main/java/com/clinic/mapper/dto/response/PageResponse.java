@@ -1,4 +1,4 @@
-package com.clinic.dto.response;
+package com.clinic.mapper.dto.response;
 
 import org.springframework.data.domain.Page;
 
