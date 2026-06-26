@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'DOCTOR' | 'PATIENT' | 'PHARMACIST';
+export type UserRole = 'ADMIN' | 'DOCTOR' | 'PATIENT' | 'PHARMACIST' | 'LABORATORY';
 
 // Appointment
 export interface Appointment {
@@ -49,7 +49,9 @@ export interface PageResponse<T> {
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
+  tokenType?: string;
+  expiresAt?: string;
 }
 
 export interface AuthUser {

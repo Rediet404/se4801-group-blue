@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useLogin, useRegister } from "@/hooks/use-auth";
+import { getFriendlyErrorMessage } from '@/lib/error-handler';
 import type { z } from "zod";
 
 function AuthLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -154,6 +155,12 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {login.error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {getFriendlyErrorMessage(login.error, 'Unable to sign in. Please check your email and password.')}
+            </div>
+          ) : null}
+
           {/* Email/Medical ID Field */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -366,7 +373,7 @@ export function RegisterPage() {
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder="Min 8 chars, letter, number & symbol"
                 className="pr-10 h-11 border-gray-300 rounded-lg"
                 {...form.register("password")}
               />

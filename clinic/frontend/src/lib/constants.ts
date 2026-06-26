@@ -5,7 +5,16 @@ export const ROLE_LABELS = {
   ADMIN: 'Admin',
   DOCTOR: 'Doctor',
   PATIENT: 'Patient',
-  PHARMACIST: 'Pharmacist'
+  PHARMACIST: 'Pharmacist',
+  LABORATORY: 'Laboratory'
+} as const;
+
+export const ROLES = {
+  ADMIN: 'admin',
+  DOCTOR: 'doctor',
+  PATIENT: 'patient',
+  PHARMACIST: 'pharmacist',
+  LABORATORY: 'laboratory'
 } as const;
 
 export const ROUTES = {
@@ -18,11 +27,52 @@ export const ROUTES = {
   adminPatients: '/admin/patients',
   adminPharmacy: '/admin/pharmacy',
   adminAppointments: '/admin/appointments',
+  adminLaboratories: '/admin/laboratories',
+  adminDoctorAvailability: '/admin/doctor-availability',
   adminInviteUser: '/admin/users/invite',
   adminAddDoctor: '/admin/doctors/new',
   adminImportPatients: '/admin/patients/import',
   adminCreateAppointment: '/admin/appointments/new',
+  adminLaboratoryDashboard: (id: string) => `/laboratory/${id}/dashboard`,
   doctorDashboard: '/doctor',
+  doctorLaboratory: '/doctor/laboratory',
   patientDashboard: '/patient',
   pharmacistDashboard: '/pharmacist/dashboard'
+  ,
+  laboratoryRoot: '/laboratory',
+  laboratoryOrders: '/laboratory/orders',
+  laboratoryOrder: (id: string) => `/laboratory/orders/${id}`,
+  laboratoryResults: '/laboratory/results',
+  laboratoryResult: (id: string) => `/laboratory/results/${id}`,
+  laboratoryProfile: '/laboratory/profile'
 } as const;
+
+// Laboratory routes
+export const LAB_ROUTES = {
+  laboratoryRoot: '/laboratory',
+  laboratoryOrders: '/laboratory/orders',
+  laboratoryResults: '/laboratory/results',
+  laboratoryProfile: '/laboratory/profile'
+} as const;
+
+export const LAB_TEST_TYPES = [
+  'CBC',
+  'Blood Glucose',
+  'Urinalysis',
+  'Liver Function',
+  'Kidney Function',
+  'Thyroid Panel',
+  'Lipid Panel',
+  'HbA1c',
+  'Culture & Sensitivity',
+  'Pregnancy Test',
+  'COVID-19 PCR',
+  'Malaria Test',
+  'Hepatitis Panel',
+  'Electrolytes',
+  'Coagulation Panel'
+] as const;
+
+export const LAB_ORDER_STATUS = ['pending', 'in_progress', 'completed', 'cancelled'] as const;
+export const LAB_URGENCY = ['routine', 'urgent', 'critical'] as const;
+export const LAB_RESULT_STATUS = ['draft', 'final'] as const;
