@@ -247,9 +247,18 @@ export function InviteUserPage() {
                   return;
                 }
 
-                setStatus(
-                  "Admin accounts are not supported from this screen yet. Choose Doctor, Patient, Pharmacist, or Laboratory.",
-                );
+                if (values.role === "ADMIN") {
+                  await apiClient.post("/admin/users", {
+                    fullName,
+                    email: values.email,
+                    password: values.password,
+                    phone: values.phone,
+                    role: "ADMIN",
+                  });
+                  setStatus("Admin user created successfully.");
+                  setTimeout(() => router.push(ROUTES.adminUsers), 700);
+                  return;
+                }
               })}
             >
               <div className="grid gap-4 md:grid-cols-2">
@@ -376,8 +385,7 @@ export function InviteUserPage() {
                       onClick={() =>
                         form.setValue("role", item.value as UserRole)
                       }
-                      disabled={item.value === "ADMIN"}
-                      className={`rounded-2xl border p-4 text-left transition ${form.watch("role") === item.value ? "border-primary bg-primary/5" : "border-border bg-background"} ${item.value === "ADMIN" ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className={`rounded-2xl border p-4 text-left transition ${form.watch("role") === item.value ? "border-primary bg-primary/5" : "border-border bg-background"}`}
                     >
                       <p className="font-semibold">{item.label}</p>
                       <p className="mt-1 text-xs text-muted-foreground">

@@ -112,4 +112,36 @@ public class AdminServiceImpl implements AdminService {
         log.info("Created user id={} role={}", savedUser.getId(), savedUser.getRole());
         return userMapper.toSummaryResponse(savedUser);
     }
+
+    @Override
+    public UserSummaryResponse updateUser(String id, com.clinic.dto.request.UpdateUserRequest request) {
+        log.debug("Updating user id={} email={} role={}", id, request.email(), request.role());
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new com.clinic.exception.ResourceNotFoundException("User not found with id: " + id));
+
+        if (!user.getEmail().equalsIgnoreCase(request.email()) && userRepository.existsByEmail(request.email())) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        user.setEmail(request.email());
+        user.setFullName(request.fullName());
+        user.setPhone(request.phone());
+        user.setRole(request.role());
+        if (request.active() != null) {
+            user.setActive(request.active());
+        }
+
+        User savedUser = userRepository.save(user);
+        log.info("Updated user id={} role={}", savedUser.getId(), savedUser.getRole());
+        return userMapper.toSummaryResponse(savedUser);
+    }
+
+    @Override
+    public void deleteUser(String id) {
+        log.debug("Deleting user id={}", id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new com.clinic.exception.ResourceNotFoundException("User not found with id: " + id));
+        userRepository.delete(user);
+        log.info("Soft deleted user id={}", id);
+    }
 }

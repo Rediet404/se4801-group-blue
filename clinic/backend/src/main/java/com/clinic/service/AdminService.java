@@ -9,4 +9,8 @@ public interface AdminService {
     PageResponse<UserSummaryResponse> listUsers(Pageable pageable);
 
     UserSummaryResponse createUser(CreateUserRequest request);
+
+    UserSummaryResponse updateUser(String id, com.clinic.dto.request.UpdateUserRequest request);
+
+    void deleteUser(String id);
 }

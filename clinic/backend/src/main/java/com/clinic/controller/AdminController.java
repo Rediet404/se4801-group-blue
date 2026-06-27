@@ -35,4 +35,17 @@ public class AdminController {
         log.info("Admin creating user with email={} role={}", request.email(), request.role());
         return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createUser(request));
     }
+
+    @PutMapping("/users/{id}")
+    public ResponseEntity<UserSummaryResponse> updateUser(@PathVariable String id, @Valid @RequestBody com.clinic.dto.request.UpdateUserRequest request) {
+        log.info("Admin updating user id={} email={} role={}", id, request.email(), request.role());
+        return ResponseEntity.ok(adminService.updateUser(id, request));
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
+        log.info("Admin deleting user id={}", id);
+        adminService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
 }
