@@ -1,14 +1,11 @@
 package com.clinic.dto.request;
 
-import com.clinic.entity.UserRole;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public record UpdateUserRequest(
-        @NotBlank(message = "Email is required") @Email(message = "Email must be valid") String email,
-        @NotBlank(message = "Full name is required") String fullName,
+        String fullName,
+        @Email(message = "Email must be valid") String email,
         String phone,
-        @NotNull(message = "Role is required") UserRole role,
         Boolean active
-) {}
+) {
+}

@@ -1,87 +1,135 @@
 package com.clinic.config;
 
+import com.clinic.exception.ApiErrorResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentMap;
 
 @Component
-@Slf4j
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private static final int CAPACITY = 100;
-    private static final int REFILL_PER_SECOND = 10;
-    
-    private final ConcurrentHashMap<String, TokenBucket> buckets = new ConcurrentHashMap<>();
+    private static final String AUTH_PATH_PREFIX = "/api/v1/auth";
+    private static final String LEGACY_AUTH_PATH_PREFIX = "/api/auth";
+
+    private final RateLimitProperties properties;
+    private final ObjectMapper objectMapper;
+    private final ConcurrentMap<String, RequestWindow> windows = new ConcurrentHashMap<>();
+
+    public RateLimitingFilter(RateLimitProperties properties, ObjectMapper objectMapper) {
+        this.properties = properties;
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        if (!properties.isEnabled() || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
+        String path = request.getRequestURI();
+        return properties.getProtectedPathPrefixes().stream().noneMatch(path::startsWith);
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
-        String ip = getClientIp(request);
-        TokenBucket bucket = buckets.computeIfAbsent(ip, k -> new TokenBucket(CAPACITY, REFILL_PER_SECOND));
+        String path = request.getRequestURI();
+        int limit = isAuthPath(path) ? properties.getAuthRequests() : properties.getRequests();
+        long now = System.currentTimeMillis();
+        long windowMillis = properties.getWindow().toMillis();
+        String key = buildKey(request, isAuthPath(path));
 
-        if (!bucket.tryConsume()) {
-            log.warn("Rate limit exceeded for IP: {}", ip);
-            response.setStatus(429); // HTTP 429 Too Many Requests
-            response.setContentType("application/json");
-            response.getWriter().write("{\"status\":429,\"error\":\"Too Many Requests\",\"message\":\"Rate limit exceeded. Please try again later.\"}");
+        RateLimitResult result = consume(key, limit, now, windowMillis);
+        applyHeaders(response, result);
+
+        if (!result.allowed()) {
+            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            objectMapper.writeValue(response.getWriter(), new ApiErrorResponse(
+                    Instant.now(),
+                    HttpStatus.TOO_MANY_REQUESTS.value(),
+                    "Too many requests. Please try again later.",
+                    path
+            ));
             return;
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String xfHeader = request.getHeader("X-Forwarded-For");
-        if (xfHeader == null || xfHeader.isBlank()) {
-            return request.getRemoteAddr();
-        }
-        return xfHeader.split(",")[0].trim();
+    private RateLimitResult consume(String key, int limit, long now, long windowMillis) {
+        RequestWindow window = windows.compute(key, (ignored, current) -> {
+            if (current == null || now >= current.resetAt()) {
+                return new RequestWindow(now + windowMillis, 1);
+            }
+            return new RequestWindow(current.resetAt(), current.used() + 1);
+        });
+
+        cleanupExpiredWindows(now);
+        int remaining = Math.max(0, limit - window.used());
+        return new RateLimitResult(window.used() <= limit, limit, remaining, window.resetAt());
     }
 
-    // Visible for testing to speed up tests or reset limits
-    public void resetLimit(String ip) {
-        buckets.remove(ip);
+    private void applyHeaders(HttpServletResponse response, RateLimitResult result) {
+        response.setHeader("X-RateLimit-Limit", String.valueOf(result.limit()));
+        response.setHeader("X-RateLimit-Remaining", String.valueOf(result.remaining()));
+        response.setHeader("X-RateLimit-Reset", String.valueOf(result.resetAtEpochSeconds()));
+        if (!result.allowed()) {
+            long retryAfterSeconds = Math.max(1, result.resetAtEpochSeconds() - Instant.now().getEpochSecond());
+            response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
+        }
     }
 
-    private static class TokenBucket {
-        private final long capacity;
-        private final long refillRate; // tokens per second
-        private double tokens;
-        private long lastRefillTimestamp;
+    private String buildKey(HttpServletRequest request, boolean authPath) {
+        String client = resolveClientIp(request);
+        String scope = authPath ? "auth" : "api";
+        return scope + ":" + client;
+    }
 
-        public TokenBucket(long capacity, long refillRate) {
-            this.capacity = capacity;
-            this.refillRate = refillRate;
-            this.tokens = capacity;
-            this.lastRefillTimestamp = System.nanoTime();
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
         }
 
-        public synchronized boolean tryConsume() {
-            refill();
-            if (tokens >= 1.0) {
-                tokens -= 1.0;
-                return true;
-            }
-            return false;
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
         }
 
-        private void refill() {
-            long now = System.nanoTime();
-            long duration = now - lastRefillTimestamp;
-            double seconds = (double) duration / TimeUnit.SECONDS.toNanos(1);
-            if (seconds > 0) {
-                tokens = Math.min(capacity, tokens + (seconds * refillRate));
-                lastRefillTimestamp = now;
-            }
+        return request.getRemoteAddr();
+    }
+
+    private boolean isAuthPath(String path) {
+        String normalizedPath = path.toLowerCase(Locale.ROOT);
+        return normalizedPath.startsWith(AUTH_PATH_PREFIX) || normalizedPath.startsWith(LEGACY_AUTH_PATH_PREFIX);
+    }
+
+    private void cleanupExpiredWindows(long now) {
+        if (windows.size() < 10_000) {
+            return;
+        }
+        windows.entrySet().removeIf(entry -> now >= entry.getValue().resetAt());
+    }
+
+    private record RequestWindow(long resetAt, int used) {
+    }
+
+    private record RateLimitResult(boolean allowed, int limit, int remaining, long resetAtMillis) {
+        long resetAtEpochSeconds() {
+            return resetAtMillis / 1000;
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.clinic.controller;
 
 import com.clinic.dto.request.CreateUserRequest;
+import com.clinic.dto.request.UpdateUserRequest;
 import com.clinic.dto.response.PageResponse;
 import com.clinic.dto.response.UserSummaryResponse;
 import com.clinic.service.AdminService;
@@ -37,8 +38,11 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<UserSummaryResponse> updateUser(@PathVariable String id, @Valid @RequestBody com.clinic.dto.request.UpdateUserRequest request) {
-        log.info("Admin updating user id={} email={} role={}", id, request.email(), request.role());
+    public ResponseEntity<UserSummaryResponse> updateUser(
+            @PathVariable String id,
+            @Valid @RequestBody UpdateUserRequest request
+    ) {
+        log.info("Admin updating user id={}", id);
         return ResponseEntity.ok(adminService.updateUser(id, request));
     }
 

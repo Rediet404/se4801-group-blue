@@ -1,10 +1,12 @@
 package com.clinic.service.impl;
 
 import com.clinic.dto.request.CreateUserRequest;
+import com.clinic.dto.request.UpdateUserRequest;
 import com.clinic.dto.response.PageResponse;
 import com.clinic.dto.response.UserSummaryResponse;
 import com.clinic.entity.*;
 import com.clinic.exception.BadRequestException;
+import com.clinic.exception.ResourceNotFoundException;
 import com.clinic.mapper.UserMapper;
 import com.clinic.repository.UserRepository;
 import com.clinic.service.AdminService;
@@ -114,34 +116,28 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public UserSummaryResponse updateUser(String id, com.clinic.dto.request.UpdateUserRequest request) {
-        log.debug("Updating user id={} email={} role={}", id, request.email(), request.role());
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new com.clinic.exception.ResourceNotFoundException("User not found with id: " + id));
+    public UserSummaryResponse updateUser(String id, UpdateUserRequest request) {
+        User user = getEntityById(id);
 
-        if (!user.getEmail().equalsIgnoreCase(request.email()) && userRepository.existsByEmail(request.email())) {
+        if (request.email() != null && userRepository.existsByEmailAndIdNot(request.email(), id)) {
             throw new BadRequestException("Email already exists");
         }
 
-        user.setEmail(request.email());
-        user.setFullName(request.fullName());
-        user.setPhone(request.phone());
-        user.setRole(request.role());
-        if (request.active() != null) {
-            user.setActive(request.active());
-        }
-
+        userMapper.updateEntity(user, request);
         User savedUser = userRepository.save(user);
-        log.info("Updated user id={} role={}", savedUser.getId(), savedUser.getRole());
+        log.info("Updated user id={}", savedUser.getId());
         return userMapper.toSummaryResponse(savedUser);
     }
 
     @Override
     public void deleteUser(String id) {
-        log.debug("Deleting user id={}", id);
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new com.clinic.exception.ResourceNotFoundException("User not found with id: " + id));
+        User user = getEntityById(id);
         userRepository.delete(user);
-        log.info("Soft deleted user id={}", id);
+        log.info("Deleted user id={}", id);
+    }
+
+    private User getEntityById(String id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
     }
 }

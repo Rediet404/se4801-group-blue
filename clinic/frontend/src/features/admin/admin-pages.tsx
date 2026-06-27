@@ -16,10 +16,12 @@ import {
   createDoctor,
   createPatient,
   deletePatient,
+  deleteUser,
   inviteUser,
   updatePatient,
+  updateUser,
 } from "@/services/api/admin";
-import { listUsers, listDoctors, listPatients, updateUser, deleteUser } from '@/services/api/users';
+import { listUsers, listDoctors, listPatients } from '@/services/api/users';
 import { listAppointments } from '@/services/api/appointments';
 import { listPrescriptionOrders, updatePrescriptionOrderStatus } from '@/features/prescriptions';
 import { listLaboratories, getLaboratory, createLaboratory, updateLaboratory, deleteLaboratory, listDoctorAvailability, getDoctorAvailabilityByLaboratory, createDoctorAvailability, updateDoctorAvailability, deleteDoctorAvailability } from '@/services/api/laboratory';
@@ -301,9 +303,9 @@ export function AdminDashboardPage() {
 // ============================================================================
 export function AdminUsersPage() {
   const urlQuery = useUrlQuery();
-  const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; role: string; status: string; lastLogin: string; phone?: string; active?: boolean }>>([]);
+  const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; phone: string; role: string; status: string; lastLogin: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingUser, setEditingUser] = useState<{ id: string; name: string; email: string; role: string; phone: string; active: boolean } | null>(null);
+  const [editingUser, setEditingUser] = useState<{ id: string; name: string; email: string; phone: string; active: boolean } | null>(null);
   const [status, setStatus] = useState<StatusType>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [query, setQuery] = useState(urlQuery);
@@ -321,16 +323,15 @@ export function AdminUsersPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const data = await listUsers({ size: 30 });
+      const data = await listUsers({ size: 100 });
       setUsers((data.content ?? []).map((u) => ({
         id: u.id,
         name: u.fullName,
         email: u.email,
+        phone: u.phone ?? '',
         role: u.role,
-        status: u.status,
-        lastLogin: u.lastLogin ?? 'Never',
-        phone: u.phone,
-        active: u.active ?? true
+        status: u.status ?? (u.active === false ? 'OFFLINE' : 'ACTIVE'),
+        lastLogin: u.lastLogin ?? 'Never'
       })));
     } catch {
       setUsers([]);
@@ -343,8 +344,8 @@ export function AdminUsersPage() {
     fetchData();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
     try {
       await deleteUser(id);
       setStatus('success');
@@ -365,9 +366,8 @@ export function AdminUsersPage() {
       await updateUser(editingUser.id, {
         fullName: editingUser.name,
         email: editingUser.email,
-        phone: editingUser.phone,
-        role: editingUser.role as any,
-        active: editingUser.active
+        phone: editingUser.phone || undefined,
+        active: editingUser.active,
       });
       setEditingUser(null);
       setStatus('success');
@@ -384,9 +384,9 @@ export function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="User Management" description="Search, filter, and manage staff and patient accounts." actionLabel="Invite User" actionHref={ROUTES.adminInviteUser} />
-      
-      <StatusAlert 
-        status={status} 
+
+      <StatusAlert
+        status={status}
         message={statusMessage}
         onDismiss={() => setStatus(null)}
         autoDismiss={true}
@@ -397,54 +397,45 @@ export function AdminUsersPage() {
         <Card className="border-primary">
           <CardHeader>
             <CardTitle>Edit User</CardTitle>
+            <CardDescription>Update account details and status</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdate} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Full Name</label>
-                  <Input 
-                    value={editingUser.name} 
-                    onChange={e => setEditingUser({...editingUser, name: e.target.value})}
+                  <Input
+                    value={editingUser.name}
+                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Email</label>
-                  <Input 
-                    value={editingUser.email} 
-                    onChange={e => setEditingUser({...editingUser, email: e.target.value})}
+                  <Input
+                    type="email"
+                    value={editingUser.email}
+                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Phone</label>
-                  <Input 
-                    value={editingUser.phone} 
-                    onChange={e => setEditingUser({...editingUser, phone: e.target.value})}
+                  <Input
+                    value={editingUser.phone}
+                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Role</label>
-                  <select 
-                    value={editingUser.role} 
-                    onChange={e => setEditingUser({...editingUser, role: e.target.value})}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  <label className="text-sm font-medium">Status</label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={editingUser.active ? 'ACTIVE' : 'OFFLINE'}
+                    onChange={(e) => setEditingUser({ ...editingUser, active: e.target.value === 'ACTIVE' })}
                   >
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="DOCTOR">DOCTOR</option>
-                    <option value="PATIENT">PATIENT</option>
-                    <option value="PHARMACIST">PHARMACIST</option>
-                    <option value="LABORATORY">LABORATORY</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="OFFLINE">Inactive</option>
                   </select>
-                </div>
-                <div className="flex items-center space-x-2 pt-8">
-                  <input 
-                    type="checkbox" 
-                    id="active-checkbox"
-                    checked={editingUser.active} 
-                    onChange={e => setEditingUser({...editingUser, active: e.target.checked})}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <label htmlFor="active-checkbox" className="text-sm font-medium">Active Account</label>
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
@@ -474,6 +465,8 @@ export function AdminUsersPage() {
               <Skeleton className="h-12 w-full rounded" />
               <Skeleton className="h-12 w-full rounded" />
             </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No users found.</div>
           ) : (
             <Table>
               <TableHeader>
@@ -488,22 +481,27 @@ export function AdminUsersPage() {
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
-                  <TableRow key={user.id || user.email}>
+                  <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell><Badge variant="outline">{user.role}</Badge></TableCell>
                     <TableCell><Badge variant={user.status === 'ACTIVE' ? 'success' : 'secondary'}>{user.status}</Badge></TableCell>
                     <TableCell>{user.lastLogin}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => setEditingUser({
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        role: user.role,
-                        phone: user.phone || '',
-                        active: user.active ?? true
-                      })}>Edit</Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDelete(user.id)}>Delete</Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingUser({
+                          id: user.id,
+                          name: user.name,
+                          email: user.email,
+                          phone: user.phone,
+                          active: user.status === 'ACTIVE',
+                        })}
+                      >
+                        Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDelete(user.id, user.name)}>Delete</Button>
                     </TableCell>
                   </TableRow>
                 ))}

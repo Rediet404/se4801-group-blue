@@ -27,7 +27,7 @@ export async function listUsers(params: Record<string, string | number | undefin
     const { data } = await apiClient.get<PageResponse<UserItem>>('/admin/users', { params });
     data.content = (data.content ?? []).map((user) => ({
       ...user,
-      status: user.status ?? 'ACTIVE'
+      status: user.status ?? (user.active === false ? 'OFFLINE' : 'ACTIVE')
     }));
     return data;
   } catch (error) {
@@ -80,14 +80,3 @@ export async function updatePatient(id: string, payload: Partial<UserItem>) {
   const { data } = await apiClient.put<UserItem>(`/patients/${id}`, payload);
   return data;
 }
-
-export async function updateUser(id: string, payload: Partial<UserItem>) {
-  const { data } = await apiClient.put<UserItem>(`/admin/users/${id}`, payload);
-  return data;
-}
-
-export async function deleteUser(id: string) {
-  const { data } = await apiClient.delete(`/admin/users/${id}`);
-  return data;
-}
-
