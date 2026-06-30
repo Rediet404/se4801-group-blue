@@ -12,14 +12,10 @@ import com.clinic.repository.DoctorRepository;
 import com.clinic.repository.LaboratoryRepository;
 import com.clinic.service.DoctorAvailabilityService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import static com.clinic.config.CacheNames.DOCTOR_AVAILABILITY;
 
 @Service
 @Transactional
@@ -44,7 +40,6 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
     }
 
     @Override
-    @CacheEvict(cacheNames = DOCTOR_AVAILABILITY, allEntries = true)
     public DoctorAvailabilityResponse create(DoctorAvailabilityCreateRequest request) {
         Doctor doctor = doctorRepository.findById(request.doctorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor not found with id: " + request.doctorId()));
@@ -59,7 +54,6 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
     }
 
     @Override
-    @CacheEvict(cacheNames = DOCTOR_AVAILABILITY, allEntries = true)
     public DoctorAvailabilityResponse update(String id, DoctorAvailabilityCreateRequest request) {
         DoctorAvailability availability = getEntityById(id);
         availabilityMapper.updateEntity(availability, request);
@@ -68,7 +62,6 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = DOCTOR_AVAILABILITY, key = "'id:' + #id")
     public DoctorAvailabilityResponse getById(String id) {
         return availabilityMapper.toResponse(getEntityById(id));
     }
@@ -98,7 +91,6 @@ public class DoctorAvailabilityServiceImpl implements DoctorAvailabilityService 
     }
 
     @Override
-    @CacheEvict(cacheNames = DOCTOR_AVAILABILITY, allEntries = true)
     public void delete(String id) {
         DoctorAvailability availability = getEntityById(id);
         availabilityRepository.delete(availability);

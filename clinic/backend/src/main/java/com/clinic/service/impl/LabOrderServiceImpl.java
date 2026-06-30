@@ -14,16 +14,12 @@ import com.clinic.service.LabOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.clinic.config.CacheNames.LAB_ORDERS;
 
 @Service
 @Transactional
@@ -41,7 +37,6 @@ public class LabOrderServiceImpl implements LabOrderService {
     }
 
     @Override
-    @CacheEvict(cacheNames = LAB_ORDERS, allEntries = true)
     public LabOrderResponse create(CreateLabOrderRequest request) {
         LabOrder order = mapper.toEntity(request);
         LabOrder saved = labOrderRepository.save(order);
@@ -51,7 +46,6 @@ public class LabOrderServiceImpl implements LabOrderService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = LAB_ORDERS, key = "'id:' + #id")
     public LabOrderResponse getById(String id) {
         return mapper.toResponse(getEntityById(id));
     }
@@ -81,7 +75,6 @@ public class LabOrderServiceImpl implements LabOrderService {
     }
 
     @Override
-    @CacheEvict(cacheNames = LAB_ORDERS, allEntries = true)
     public LabOrderResponse updateStatus(String id, UpdateLabOrderStatusRequest request) {
         LabOrder order = getEntityById(id);
         order.setStatus(LabOrderStatus.valueOf(request.status().toUpperCase()));
@@ -91,7 +84,6 @@ public class LabOrderServiceImpl implements LabOrderService {
     }
 
     @Override
-    @CacheEvict(cacheNames = LAB_ORDERS, allEntries = true)
     public void delete(String id) {
         labOrderRepository.deleteById(id);
         log.info("Deleted lab order id={}", id);

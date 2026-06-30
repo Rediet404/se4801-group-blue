@@ -13,8 +13,6 @@ import com.clinic.repository.LabOrderRepository;
 import com.clinic.service.AsyncNotificationService;
 import com.clinic.service.LabResultService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-
-import static com.clinic.config.CacheNames.LAB_RESULTS;
 
 @Service
 @Transactional
@@ -46,7 +42,6 @@ public class LabResultServiceImpl implements LabResultService {
     }
 
     @Override
-    @CacheEvict(cacheNames = LAB_RESULTS, allEntries = true)
     public LabResultResponse create(CreateLabResultRequest request) {
         var labOrder = labOrderRepository.findById(request.labOrderId())
             .orElseThrow(() -> new ResourceNotFoundException("Lab order not found: " + request.labOrderId()));
@@ -74,7 +69,6 @@ public class LabResultServiceImpl implements LabResultService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = LAB_RESULTS, key = "'id:' + #id")
     public LabResultResponse getById(String id) {
         return mapper.toResponse(getEntityById(id));
     }
@@ -104,7 +98,6 @@ public class LabResultServiceImpl implements LabResultService {
     }
 
     @Override
-    @CacheEvict(cacheNames = LAB_RESULTS, allEntries = true)
     public LabResultResponse update(String id, UpdateLabResultRequest request) {
         LabResult result = getEntityById(id);
         if (request.findings() != null) {
@@ -120,7 +113,6 @@ public class LabResultServiceImpl implements LabResultService {
     }
 
     @Override
-    @CacheEvict(cacheNames = LAB_RESULTS, allEntries = true)
     public LabResultResponse updateStatus(String id, UpdateLabResultStatusRequest request) {
         LabResult result = getEntityById(id);
         result.setStatus(LabResultStatus.valueOf(request.status().toUpperCase()));
@@ -135,7 +127,6 @@ public class LabResultServiceImpl implements LabResultService {
     }
 
     @Override
-    @CacheEvict(cacheNames = LAB_RESULTS, allEntries = true)
     public void delete(String id) {
         labResultRepository.deleteById(id);
         log.info("Deleted lab result id={}", id);

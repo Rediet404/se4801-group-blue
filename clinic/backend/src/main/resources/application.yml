@@ -32,16 +32,6 @@ spring:
   mvc:
     problemdetails:
       enabled: true
-  cache:
-    type: redis
-    redis:
-      time-to-live: 10m
-      cache-null-values: false
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      timeout: 2s
 
 server:
   port: 8080
@@ -55,15 +45,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,caches,threaddump
+        include: health,info,metrics,prometheus,threaddump
   endpoint:
     health:
       probes:
         enabled: true
       show-details: when_authorized
-  health:
-    redis:
-      enabled: true
 
 springdoc:
   swagger-ui:
