@@ -11,7 +11,7 @@ A production-ready Spring Boot 3.x (Java 21) backend system for managing clinic 
 
 ##  Tech Stack
 
-- **Java 21** with Records and modern language features
+- **Java 21** with Records and modern language features.
 - **Spring Boot 3.3.0** with Spring Framework 6.x
 - **Spring Data JPA** with Hibernate ORM
 - **PostgreSQL** for production, H2 for testing
