@@ -2,9 +2,9 @@ spring:
   application:
     name: clinic
   datasource:
-    url: jdbc:postgresql://localhost:5432/clinic_db
-    username: clinic_user
-    password: clinic_secure_password_change_me
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
       pool-name: ClinicHikariPool
       maximum-pool-size: 20
