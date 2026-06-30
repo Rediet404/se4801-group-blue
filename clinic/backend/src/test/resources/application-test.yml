@@ -15,28 +15,16 @@ spring:
   flyway:
     enabled: false
   cache:
-    type: simple          
-  data:
-    redis:
-      host: localhost    
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+    type: simple
   security:
     jwt:
       secret: c2VjcmV0LWZvci10ZXN0cy1vbmx5LWNsaW5pY2VsLXNlY3JldC1rZXktMzI=
       expiration-millis: 3600000
       issuer: clinic-Test
 
-management:
-  health:
-    redis:
-      enabled: false      # ← stops Spring actuator from returning 503 when Redis is down
-
 app:
   rate-limit:
-    enabled: false        # ← rate limiter OFF for most tests
+    enabled: false
 
 logging:
   level:
